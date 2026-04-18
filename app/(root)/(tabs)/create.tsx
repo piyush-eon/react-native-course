@@ -21,35 +21,61 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const TYPES = ["apartment", "house", "villa", "studio"] as const;
 type PropertyType = (typeof TYPES)[number];
 
+const MIN_PRICE = 1;
+const MAX_PRICE = 999_999_999;
+
 const inputClass =
   "bg-white border border-gray-200 rounded-2xl px-4 py-3 text-gray-800";
 const labelClass = "text-sm font-semibold text-gray-700 mb-1.5";
 const sectionClass = "mb-5";
 
+interface FormState {
+  title: string;
+  description: string;
+  price: string;
+  type: PropertyType;
+  bedrooms: number;
+  bathrooms: number;
+  areaSqft: string;
+  address: string;
+  city: string;
+  latitude: string;
+  longitude: string;
+  isFeatured: boolean;
+  images: string[];
+  localImages: string[];
+}
+
+const INITIAL_FORM: FormState = {
+  title: "",
+  description: "",
+  price: "",
+  type: "apartment",
+  bedrooms: 1,
+  bathrooms: 1,
+  areaSqft: "",
+  address: "",
+  city: "",
+  latitude: "",
+  longitude: "",
+  isFeatured: false,
+  images: [],
+  localImages: [],
+};
+
 export default function CreatePropertyScreen() {
   const router = useRouter();
   const authSupabase = useSupabase();
 
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [type, setType] = useState<PropertyType>("apartment");
-  const [bedrooms, setBedrooms] = useState(1);
-  const [bathrooms, setBathrooms] = useState(1);
-  const [areaSqft, setAreaSqft] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [images, setImages] = useState<string[]>([]); // uploaded URLs
-  const [localImages, setLocalImages] = useState<string[]>([]); // local preview URIs
+  const [form, setForm] = useState<FormState>(INITIAL_FORM);
 
   // Loading states
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
+
+  const updateForm = (fields: Partial<FormState>) =>
+    setForm((prev) => ({ ...prev, ...fields }));
 
   // ─── Image Picker ──────────────────────────────────────────
   const handlePickImages = async () => {
@@ -107,14 +133,18 @@ export default function CreatePropertyScreen() {
       }
     }
 
-    setImages((prev) => [...prev, ...uploadedUrls]);
-    setLocalImages((prev) => [...prev, ...previewUris]);
+    updateForm({
+      images: [...form.images, ...uploadedUrls],
+      localImages: [...form.localImages, ...previewUris],
+    });
     setUploadingImages(false);
   };
 
   const handleRemoveImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    setLocalImages((prev) => prev.filter((_, i) => i !== index));
+    updateForm({
+      images: form.images.filter((_, i) => i !== index),
+      localImages: form.localImages.filter((_, i) => i !== index),
+    });
   };
 
   // ─── Location Detection ────────────────────────────────────
@@ -134,8 +164,10 @@ export default function CreatePropertyScreen() {
         accuracy: Location.Accuracy.Balanced,
       });
 
-      setLatitude(String(location.coords.latitude));
-      setLongitude(String(location.coords.longitude));
+      updateForm({
+        latitude: String(location.coords.latitude),
+        longitude: String(location.coords.longitude),
+      });
     } catch (err) {
       Alert.alert("Error", "Could not detect location. Enter manually.");
     } finally {
@@ -145,31 +177,44 @@ export default function CreatePropertyScreen() {
 
   // ─── Submit ────────────────────────────────────────────────
   const handleSubmit = async () => {
-    // Basic validation
-    if (!title.trim()) return Alert.alert("Validation", "Title is required.");
-    if (!price.trim()) return Alert.alert("Validation", "Price is required.");
-    if (!address.trim())
+    if (!form.title.trim())
+      return Alert.alert("Validation", "Title is required.");
+
+    if (!form.price.trim())
+      return Alert.alert("Validation", "Price is required.");
+
+    const priceNum = Number(form.price);
+    if (isNaN(priceNum) || priceNum < MIN_PRICE)
+      return Alert.alert("Validation", "Price must be greater than ₹0.");
+    if (priceNum > MAX_PRICE)
+      return Alert.alert(
+        "Validation",
+        `Price cannot exceed ₹${MAX_PRICE.toLocaleString("en-IN")}.`
+      );
+
+    if (!form.address.trim())
       return Alert.alert("Validation", "Address is required.");
-    if (!city.trim()) return Alert.alert("Validation", "City is required.");
-    if (images.length === 0)
+    if (!form.city.trim())
+      return Alert.alert("Validation", "City is required.");
+    if (form.images.length === 0)
       return Alert.alert("Validation", "Please upload at least one image.");
 
     setSubmitting(true);
 
     const { error } = await authSupabase.from("properties").insert({
-      title: title.trim(),
-      description: description.trim(),
-      price: Number(price),
-      type,
-      bedrooms,
-      bathrooms,
-      area_sqft: areaSqft ? Number(areaSqft) : null,
-      address: address.trim(),
-      city: city.trim(),
-      latitude: latitude ? Number(latitude) : null,
-      longitude: longitude ? Number(longitude) : null,
-      images,
-      is_featured: isFeatured,
+      title: form.title.trim(),
+      description: form.description.trim(),
+      price: priceNum,
+      type: form.type,
+      bedrooms: form.bedrooms,
+      bathrooms: form.bathrooms,
+      area_sqft: form.areaSqft ? Number(form.areaSqft) : null,
+      address: form.address.trim(),
+      city: form.city.trim(),
+      latitude: form.latitude ? Number(form.latitude) : null,
+      longitude: form.longitude ? Number(form.longitude) : null,
+      images: form.images,
+      is_featured: form.isFeatured,
       is_sold: false,
     });
 
@@ -181,6 +226,7 @@ export default function CreatePropertyScreen() {
       return;
     }
 
+    setForm(INITIAL_FORM);
     Alert.alert("Success! 🎉", "Property listed successfully.", [
       { text: "OK", onPress: () => router.replace("/(root)/(tabs)") },
     ]);
@@ -283,7 +329,7 @@ export default function CreatePropertyScreen() {
             </Text>
 
             <View className="flex-row flex-wrap gap-3">
-              {localImages.map((uri, index) => (
+              {form.localImages.map((uri, index) => (
                 <View key={index} className="relative">
                   <Image
                     source={{ uri }}
@@ -306,7 +352,7 @@ export default function CreatePropertyScreen() {
                 </View>
               ))}
 
-              {localImages.length < 6 && (
+              {form.localImages.length < 6 && (
                 <TouchableOpacity
                   onPress={handlePickImages}
                   disabled={uploadingImages}
@@ -336,8 +382,8 @@ export default function CreatePropertyScreen() {
               className={inputClass}
               placeholder="e.g. Modern 3BHK in Bandra"
               placeholderTextColor="#9CA3AF"
-              value={title}
-              onChangeText={setTitle}
+              value={form.title}
+              onChangeText={(v) => updateForm({ title: v })}
             />
           </View>
 
@@ -347,23 +393,27 @@ export default function CreatePropertyScreen() {
               className={`${inputClass} h-24`}
               placeholder="Describe the property..."
               placeholderTextColor="#9CA3AF"
-              value={description}
-              onChangeText={setDescription}
+              value={form.description}
+              onChangeText={(v) => updateForm({ description: v })}
               multiline
               textAlignVertical="top"
             />
           </View>
 
+          {/* Price */}
           <View className={sectionClass}>
             <Text className={labelClass}>Price (₹)</Text>
             <TextInput
               className={inputClass}
               placeholder="e.g. 5000000"
               placeholderTextColor="#9CA3AF"
-              value={price}
-              onChangeText={setPrice}
+              value={form.price}
+              onChangeText={(v) => updateForm({ price: v })}
               keyboardType="numeric"
             />
+            <Text className="text-xs text-gray-400 mt-1.5 ml-1">
+              Valid range: ₹1 – ₹{MAX_PRICE.toLocaleString("en-IN")}
+            </Text>
           </View>
 
           {/* Property Type */}
@@ -373,16 +423,16 @@ export default function CreatePropertyScreen() {
               {TYPES.map((t) => (
                 <TouchableOpacity
                   key={t}
-                  onPress={() => setType(t)}
+                  onPress={() => updateForm({ type: t })}
                   className={`px-4 py-2 rounded-full border ${
-                    type === t
+                    form.type === t
                       ? "bg-blue-600 border-blue-600"
                       : "bg-white border-gray-200"
                   }`}
                 >
                   <Text
                     className={`text-sm font-semibold capitalize ${
-                      type === t ? "text-white" : "text-gray-600"
+                      form.type === t ? "text-white" : "text-gray-600"
                     }`}
                   >
                     {t}
@@ -394,11 +444,15 @@ export default function CreatePropertyScreen() {
 
           {/* Bedrooms / Bathrooms */}
           <View className="flex-row gap-4 mb-5">
-            <Counter label="Bedrooms" value={bedrooms} onChange={setBedrooms} />
+            <Counter
+              label="Bedrooms"
+              value={form.bedrooms}
+              onChange={(v) => updateForm({ bedrooms: v })}
+            />
             <Counter
               label="Bathrooms"
-              value={bathrooms}
-              onChange={setBathrooms}
+              value={form.bathrooms}
+              onChange={(v) => updateForm({ bathrooms: v })}
             />
           </View>
 
@@ -408,8 +462,8 @@ export default function CreatePropertyScreen() {
               className={inputClass}
               placeholder="e.g. 1200"
               placeholderTextColor="#9CA3AF"
-              value={areaSqft}
-              onChangeText={setAreaSqft}
+              value={form.areaSqft}
+              onChangeText={(v) => updateForm({ areaSqft: v })}
               keyboardType="numeric"
             />
           </View>
@@ -421,8 +475,8 @@ export default function CreatePropertyScreen() {
               className={inputClass}
               placeholder="Street address"
               placeholderTextColor="#9CA3AF"
-              value={address}
-              onChangeText={setAddress}
+              value={form.address}
+              onChangeText={(v) => updateForm({ address: v })}
             />
           </View>
 
@@ -432,8 +486,8 @@ export default function CreatePropertyScreen() {
               className={inputClass}
               placeholder="e.g. Mumbai"
               placeholderTextColor="#9CA3AF"
-              value={city}
-              onChangeText={setCity}
+              value={form.city}
+              onChangeText={(v) => updateForm({ city: v })}
             />
           </View>
 
@@ -463,8 +517,8 @@ export default function CreatePropertyScreen() {
                   className={inputClass}
                   placeholder="Latitude"
                   placeholderTextColor="#9CA3AF"
-                  value={latitude}
-                  onChangeText={setLatitude}
+                  value={form.latitude}
+                  onChangeText={(v) => updateForm({ latitude: v })}
                   keyboardType="numeric"
                 />
               </View>
@@ -473,8 +527,8 @@ export default function CreatePropertyScreen() {
                   className={inputClass}
                   placeholder="Longitude"
                   placeholderTextColor="#9CA3AF"
-                  value={longitude}
-                  onChangeText={setLongitude}
+                  value={form.longitude}
+                  onChangeText={(v) => updateForm({ longitude: v })}
                   keyboardType="numeric"
                 />
               </View>
@@ -486,8 +540,8 @@ export default function CreatePropertyScreen() {
             <Toggle
               label="Featured Property"
               description="Show this in the Featured section on home"
-              value={isFeatured}
-              onChange={setIsFeatured}
+              value={form.isFeatured}
+              onChange={(v) => updateForm({ isFeatured: v })}
             />
           </View>
 

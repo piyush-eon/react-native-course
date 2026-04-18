@@ -4,8 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { Property } from "@/types";
 import { useUser } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -24,9 +24,11 @@ export default function HomeScreen() {
   const [recommended, setRecommended] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchProperties();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchProperties();
+    }, [])
+  );
 
   const fetchProperties = async () => {
     setLoading(true);
