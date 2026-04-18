@@ -1,6 +1,5 @@
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# Let's build Kribb in React Native 👋
+<img width="893" height="355" alt="a-minimal-modern-logo-design-for-kribb-a_HXGKabojQta7r07-2pIIoQ_Yp8A-TZSRRKlOeUPJe2Wwg_sd" src="https://github.com/user-attachments/assets/29b2cbd5-e997-40df-a13a-eb70e7a2a719" />
 
 ## Get started
 
