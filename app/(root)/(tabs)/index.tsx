@@ -66,20 +66,11 @@ export default function HomeScreen() {
                 style={{ width: 90, height: 36 }}
                 resizeMode="contain"
               />
-              <View className="flex-row items-center gap-3">
-                <View className="items-end">
-                  <Text className="text-gray-500 text-xs">Good morning 👋</Text>
-                  <Text className="text-gray-900 text-base font-bold">
-                    {user?.firstName ?? "User"}
-                  </Text>
-                </View>
-                <TouchableOpacity className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm">
-                  <Ionicons
-                    name="notifications-outline"
-                    size={20}
-                    color="#374151"
-                  />
-                </TouchableOpacity>
+              <View className="items-end">
+                <Text className="text-gray-500 text-xs">Good morning 👋</Text>
+                <Text className="text-gray-900 text-base font-bold">
+                  {user?.firstName ?? "User"}
+                </Text>
               </View>
             </View>
 
