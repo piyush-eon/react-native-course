@@ -1,5 +1,7 @@
-# Let's build Kribb in React Native 👋
-<img width="893" height="355" alt="a-minimal-modern-logo-design-for-kribb-a_HXGKabojQta7r07-2pIIoQ_Yp8A-TZSRRKlOeUPJe2Wwg_sd" src="https://github.com/user-attachments/assets/29b2cbd5-e997-40df-a13a-eb70e7a2a719" />
+# React Native Full Course 2026 - Build Kribb (Full Stack App for IOS and Android)
+### https://youtu.be/WSppuT4A09Y
+<img width="960" height="540" alt="1" src="https://github.com/user-attachments/assets/f38d2b84-38a1-4d7e-964c-9225258de2ac" />
+
 
 ## Get started
 
