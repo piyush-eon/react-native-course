@@ -116,6 +116,10 @@ export default function SignUpScreen() {
         >
           <Text className="text-blue-600">I need a new code</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => signUp.reset()} className="py-2">
+          <Text className="text-blue-600">Start over</Text>
+        </TouchableOpacity>
       </View>
     );
   }
